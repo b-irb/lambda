@@ -335,11 +335,9 @@ struct expr_t* substitute(struct expr_t* expr, char target, struct expr_t* x) {
             }
             break;
         case FUNC:
-            tmp = substitute(expr->value.func.body, target, x);
-            if (expr->value.func.name == target) {
-                expr = tmp;
-            } else {
-                expr->value.func.body = tmp;
+            if (expr->value.func.name != target) {
+                expr->value.func.body =
+                    substitute(expr->value.func.body, target, x);
             }
             break;
         case APP:
@@ -354,10 +352,19 @@ struct expr_t* substitute(struct expr_t* expr, char target, struct expr_t* x) {
 struct expr_t* beta_reduce(struct expr_t* m, struct expr_t* n) {
     char target;
 
+    if (m->type != FUNC) {
+        return m;
+    }
+
     target = m->value.func.name;
+    puts("beta reduction");
     print_expr(m);
+    print_expr(n);
 
     m = substitute(m->value.func.body, target, n);
+
+    puts("post beta reduction");
+    print_expr(m);
 
     return m;
 }
@@ -366,7 +373,7 @@ struct expr_t* apply(struct expr_t* expr) {
     struct expr_t* m = expr->value.app.m;
     struct expr_t* n = expr->value.app.n;
 
-    if (m->type == APP) {
+    while (m->type == APP) {
         m = apply(m);
     }
 
@@ -386,6 +393,7 @@ struct expr_t* reduce_expr(struct expr_t* expr) {
             break;
     }
     fprintf(stderr, "reduction step\n");
+    print_expr(expr);
     return expr;
 }
 
