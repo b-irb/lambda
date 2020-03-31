@@ -1,5 +1,5 @@
 # compiler flags
-CFLAGS := -O2 -flto
+CCFLAGS := -O2 -flto
 DEBUGFLAGS = -DDEBUG -fsanitize=address -ggdb
 
 # object files
@@ -7,18 +7,14 @@ OBJ := src/main.o
 
 .PHONY: all
 all: lambda
+debug: CCFLAGS += $(DEBUGFLAGS)
+debug: lambda
 
 lambda: $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -o $@
+	$(CC) $(CCFLAGS) $(OBJ) -o $@
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $^ -o $@
-
-debug: $(OBJ)
-	$(CC) $(DEBUGFLAGS) $(OBJ) -o $@
-
-%.o: %.c
-	$(CC) $(DEBUGFLAGS) $(CFLAGS) -c $^ -o $@
+	$(CC) $(CCFLAGS) -c $^ -o $@
 
 .PHONY: clean
 clean:
