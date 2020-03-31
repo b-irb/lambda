@@ -34,6 +34,7 @@ struct parser_ctx {
     size_t offset;
 };
 
+void destroy_expr(struct expr_t*);
 void print_expr(struct expr_t*);
 struct expr_t* parse_expr(struct parser_ctx*);
 int parse_name(struct parser_ctx*, char*);
@@ -96,6 +97,7 @@ struct expr_t* create_func(char name, struct expr_t* body) {
     struct expr_t* func;
 
     if (!(func = malloc(sizeof(*func)))) {
+        destroy_expr(body);
         return NULL;
     }
 
@@ -109,6 +111,8 @@ struct expr_t* create_app(struct expr_t* m, struct expr_t* n) {
     struct expr_t* app;
 
     if (!(app = malloc(sizeof(*app)))) {
+        destroy_expr(m);
+        destroy_expr(n);
         return NULL;
     }
 
@@ -232,6 +236,7 @@ struct expr_t* parse_func(struct parser_ctx* ctx) {
     }
 
     if (!parser_match(ctx, ')')) {
+        destroy_expr(body);
         err_str = "failed to match ')'";
         goto error;
     }
