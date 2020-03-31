@@ -17,6 +17,9 @@ lambda: $(OBJ)
 debug: $(OBJ)
 	$(CC) $(DEBUGFLAGS) $(OBJ) -o $@
 
+%.o: %.c
+	$(CC) $(DEBUGFLAGS) $(CFLAGS) -c $^ -o $@
+
 .PHONY: clean
 clean:
 	find -name "*.o" -delete
