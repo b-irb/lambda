@@ -16,6 +16,8 @@ $ cd lambda
 $ make
 ```
 
+(to produce the debug build, use `make debug`).
+
 A `lambda` executable should be present in the main repository directory.
 
 ## Grammar
