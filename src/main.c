@@ -38,6 +38,8 @@ void print_expr(struct expr_t*);
 struct expr_t* parse_expr(struct parser_ctx*);
 int parse_name(struct parser_ctx*, char*);
 struct expr_t* parse_func(struct parser_ctx*);
+struct expr_t* reduce_expr(struct expr_t*);
+struct expr_t* apply(struct expr_t*);
 
 char parser_advance(struct parser_ctx* ctx) { ++ctx->offset; }
 
@@ -243,7 +245,9 @@ struct expr_t* parse_expr_internal(struct parser_ctx* ctx) {
         goto error;
     }
 
+#ifdef DEBUG
     fprintf(stderr, "[expr] consuming '%c'\n", byte);
+#endif
 
     switch (byte) {
         case '(':
@@ -316,6 +320,72 @@ struct expr_t* parse_buffer(char* buf, size_t size) {
     return parse_expr(&ctx);
 }
 
+struct expr_t* substitute(struct expr_t* expr, char target, struct expr_t* x) {
+    struct expr_t* tmp;
+
+    switch (expr->type) {
+        case VAR:
+            if (expr->value.var == target) {
+                expr = x;
+            }
+            break;
+        case FUNC:
+            tmp = substitute(expr->value.func.body, target, x);
+            if (expr->value.func.name == target) {
+                expr = tmp;
+            } else {
+                expr->value.func.body = tmp;
+            }
+            break;
+        case APP:
+            expr->value.app.m = substitute(expr->value.app.m, target, x);
+            expr->value.app.n = substitute(expr->value.app.n, target, x);
+            break;
+    }
+
+    return expr;
+}
+
+struct expr_t* beta_reduce(struct expr_t* m, struct expr_t* n) {
+    char target;
+
+    target = m->value.func.name;
+
+    print_expr(m);
+    printf("\n");
+
+    m = substitute(m->value.func.body, target, n);
+
+    return m;
+}
+
+struct expr_t* apply(struct expr_t* expr) {
+    struct expr_t* m = expr->value.app.m;
+    struct expr_t* n = expr->value.app.n;
+
+    if (m->type == APP) {
+        m = apply(m);
+    }
+
+    return beta_reduce(m, n);
+}
+
+struct expr_t* reduce_expr(struct expr_t* expr) {
+    switch (expr->type) {
+        case VAR:
+            break;
+        case FUNC:
+            expr->value.func.body = reduce_expr(expr->value.func.body);
+            break;
+        case APP:
+            /* perform alpha subsitution and beta reduction */
+            expr = reduce_expr(apply(expr));
+            break;
+    }
+    fprintf(stderr, "reduction step\n");
+    return expr;
+}
+
 int main(int argc, char** argv) {
     char* buffer;
     size_t size;
@@ -338,5 +408,11 @@ int main(int argc, char** argv) {
 
     print_expr(expr);
     printf("\n");
+
+    expr = reduce_expr(expr);
+
+    print_expr(expr);
+    printf("\n");
+
     return 0;
 }
