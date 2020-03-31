@@ -366,22 +366,7 @@ struct expr_t* beta_reduce(struct expr_t* m, struct expr_t* n) {
     if (m->type != FUNC) {
         return m;
     }
-
-    target = m->value.func.name;
-#ifdef DEBUG
-    fprintf(stderr, "beta reduction\n");
-    print_expr(m);
-    print_expr(n);
-#endif
-
-    m = substitute(m->value.func.body, target, n);
-
-#ifdef DEBUG
-    fprintf(stderr, "post beta reduction\n");
-    print_expr(m);
-#endif
-
-    return m;
+    return substitute(m->value.func.body, m->value.func.name, n);
 }
 
 struct expr_t* apply(struct expr_t* expr) {
@@ -396,6 +381,8 @@ struct expr_t* apply(struct expr_t* expr) {
 }
 
 struct expr_t* reduce_expr(struct expr_t* expr) {
+    print_expr(expr);
+
     switch (expr->type) {
         case VAR:
             break;
@@ -434,8 +421,11 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
+    puts("initial expression");
     print_expr(expr);
+    puts("\nsimplification steps");
     expr = reduce_expr(expr);
+    puts("\nsimplified expression");
     print_expr(expr);
 
     return 0;
