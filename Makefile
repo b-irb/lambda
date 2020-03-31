@@ -1,6 +1,6 @@
 # compiler flags
 CFLAGS := -O2 -flto
-CDBGFLAGS = -fsanitize=address -ggdb
+DEBUGFLAGS = -fsanitize=address -ggdb
 
 # object files
 OBJ := src/main.o
@@ -14,17 +14,11 @@ lambda: $(OBJ)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $^ -o $@
 
-.PHONY: debug
-debug: lambda-debug
-
-lambda-debug: $(OBJ)
-	$(CC) $(CDBGFLAGS) $(OBJ) -o $@
-
-%.o: %.c
-	$(CC) $(CDBGFLAGS) -c $^ -o $@
+debug: $(OBJ)
+	$(CC) $(DEBUGFLAGS) $(OBJ) -o $@
 
 .PHONY: clean
 clean:
 	find -name "*.o" -delete
-	rm -f lambda*
+	rm -f -- lambda debug
 
