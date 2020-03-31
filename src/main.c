@@ -135,21 +135,26 @@ void destroy_expr(struct expr_t* expr) {
     }
 }
 
-void print_expr(struct expr_t* expr) {
+void print_expr_internal(struct expr_t* expr) {
     switch (expr->type) {
         case VAR:
             printf("%c", expr->value.var);
             break;
         case FUNC:
             printf("(%c.", expr->value.func.name);
-            print_expr(expr->value.func.body);
+            print_expr_internal(expr->value.func.body);
             printf(")");
             break;
         case APP:
-            print_expr(expr->value.app.m);
-            print_expr(expr->value.app.n);
+            print_expr_internal(expr->value.app.m);
+            print_expr_internal(expr->value.app.n);
             break;
     }
+}
+
+void print_expr(struct expr_t* expr) {
+    print_expr_internal(expr);
+    putc('\n', stdout);
 }
 
 char* read_file(char* fname, size_t* size) {
@@ -350,9 +355,7 @@ struct expr_t* beta_reduce(struct expr_t* m, struct expr_t* n) {
     char target;
 
     target = m->value.func.name;
-
     print_expr(m);
-    printf("\n");
 
     m = substitute(m->value.func.body, target, n);
 
@@ -407,12 +410,8 @@ int main(int argc, char** argv) {
     }
 
     print_expr(expr);
-    printf("\n");
-
     expr = reduce_expr(expr);
-
     print_expr(expr);
-    printf("\n");
 
     return 0;
 }
