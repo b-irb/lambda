@@ -199,7 +199,9 @@ struct expr_t* parse_var(struct parser_ctx* ctx) {
 
     return create_var(name);
 error:
+#ifdef DEBUG
     fprintf(stderr, "[var] %s\n", err_str);
+#endif
     return NULL;
 }
 
@@ -236,7 +238,9 @@ struct expr_t* parse_func(struct parser_ctx* ctx) {
 
     return create_func(name, body);
 error:
+#ifdef DEBUG
     fprintf(stderr, "[func] %s\n", err_str);
+#endif
     return NULL;
 }
 
@@ -273,7 +277,9 @@ struct expr_t* parse_expr_internal(struct parser_ctx* ctx) {
 
     return expr;
 error:
+#ifdef DEBUG
     fprintf(stderr, "[expr] %s\n", err_str);
+#endif
     return NULL;
 }
 
@@ -357,14 +363,18 @@ struct expr_t* beta_reduce(struct expr_t* m, struct expr_t* n) {
     }
 
     target = m->value.func.name;
-    puts("beta reduction");
+#ifdef DEBUG
+    fprintf(stderr, "beta reduction\n");
     print_expr(m);
     print_expr(n);
+#endif
 
     m = substitute(m->value.func.body, target, n);
 
-    puts("post beta reduction");
+#ifdef DEBUG
+    fprintf(stderr, "post beta reduction\n");
     print_expr(m);
+#endif
 
     return m;
 }
@@ -392,8 +402,10 @@ struct expr_t* reduce_expr(struct expr_t* expr) {
             expr = reduce_expr(apply(expr));
             break;
     }
+#ifdef DEBUG
     fprintf(stderr, "reduction step\n");
     print_expr(expr);
+#endif
     return expr;
 }
 

@@ -1,6 +1,6 @@
 # compiler flags
 CFLAGS := -O2 -flto
-DEBUGFLAGS = -fsanitize=address -ggdb
+DEBUGFLAGS = -DDEBUG -fsanitize=address -ggdb
 
 # object files
 OBJ := src/main.o
