@@ -36,6 +36,7 @@ struct parser_ctx {
 };
 
 void deref_expr(struct expr_t*);
+void deref_node(struct expr_t*);
 void print_expr(struct expr_t*);
 struct expr_t* parse_expr(struct parser_ctx*);
 int parse_name(struct parser_ctx*, char*);
@@ -43,7 +44,7 @@ struct expr_t* parse_func(struct parser_ctx*);
 struct expr_t* reduce_expr(struct expr_t*);
 struct expr_t* apply(struct expr_t*);
 
-char parser_advance(struct parser_ctx* ctx) { ++ctx->offset; }
+void parser_advance(struct parser_ctx* ctx) { ++ctx->offset; }
 
 int parser_read(struct parser_ctx* ctx, char* out) {
     char byte;
@@ -157,8 +158,7 @@ void deref_expr(struct expr_t* expr) {
         free(expr);
 }
 
-void deref_node(struct expr_t* node)
-{
+void deref_node(struct expr_t* node) {
     if (!--node->refcnt)
         free(node);
 }
@@ -234,7 +234,6 @@ error:
 }
 
 struct expr_t* parse_func(struct parser_ctx* ctx) {
-    char byte;
     char name;
     char* err_str;
     struct expr_t* body;
@@ -361,8 +360,6 @@ struct expr_t* parse_buffer(char* buf, size_t size) {
 }
 
 struct expr_t* substitute(struct expr_t* expr, char target, struct expr_t* x) {
-    struct expr_t* tmp;
-
     switch (expr->type) {
         case VAR:
             if (expr->value.var == target) {
@@ -387,8 +384,6 @@ struct expr_t* substitute(struct expr_t* expr, char target, struct expr_t* x) {
 }
 
 struct expr_t* beta_reduce(struct expr_t* m, struct expr_t* n) {
-    char target;
-
     if (m->type != FUNC) {
         deref_expr(n);
         return m;

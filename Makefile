@@ -1,5 +1,5 @@
 # compiler flags
-CCFLAGS := -O2 -flto
+CCFLAGS := -Wall -Wextra -flto -O2 -g
 DEBUGFLAGS = -DDEBUG -fsanitize=address -ggdb
 
 # object files
