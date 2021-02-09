@@ -20,6 +20,7 @@ struct expr_app_t {
 };
 
 struct expr_t {
+    int refcnt;
     enum expr_type_t type;
     union {
         char var;
@@ -34,7 +35,7 @@ struct parser_ctx {
     size_t offset;
 };
 
-void destroy_expr(struct expr_t*);
+void deref_expr(struct expr_t*);
 void print_expr(struct expr_t*);
 struct expr_t* parse_expr(struct parser_ctx*);
 int parse_name(struct parser_ctx*, char*);
@@ -88,6 +89,7 @@ struct expr_t* create_var(char name) {
         return NULL;
     }
 
+    var->refcnt = 1;
     var->type = VAR;
     var->value.var = name;
     return var;
@@ -97,10 +99,11 @@ struct expr_t* create_func(char name, struct expr_t* body) {
     struct expr_t* func;
 
     if (!(func = malloc(sizeof(*func)))) {
-        destroy_expr(body);
+        deref_expr(body);
         return NULL;
     }
 
+    func->refcnt = 1;
     func->type = FUNC;
     func->value.func.name = name;
     func->value.func.body = body;
@@ -111,32 +114,53 @@ struct expr_t* create_app(struct expr_t* m, struct expr_t* n) {
     struct expr_t* app;
 
     if (!(app = malloc(sizeof(*app)))) {
-        destroy_expr(m);
-        destroy_expr(n);
+        deref_expr(m);
+        deref_expr(n);
         return NULL;
     }
 
+    app->refcnt = 1;
     app->type = APP;
     app->value.app.m = m;
     app->value.app.n = n;
     return app;
 }
 
-void destroy_expr(struct expr_t* expr) {
+void ref_expr(struct expr_t* expr) {
     switch (expr->type) {
         case VAR:
-            free(expr);
             break;
         case FUNC:
-            destroy_expr(expr->value.func.body);
-            free(expr);
+            ref_expr(expr->value.func.body);
             break;
         case APP:
-            destroy_expr(expr->value.app.m);
-            destroy_expr(expr->value.app.n);
-            free(expr);
+            ref_expr(expr->value.app.m);
+            ref_expr(expr->value.app.n);
             break;
     }
+    ++expr->refcnt;
+}
+
+void deref_expr(struct expr_t* expr) {
+    switch (expr->type) {
+        case VAR:
+            break;
+        case FUNC:
+            deref_expr(expr->value.func.body);
+            break;
+        case APP:
+            deref_expr(expr->value.app.m);
+            deref_expr(expr->value.app.n);
+            break;
+    }
+    if (!--expr->refcnt)
+        free(expr);
+}
+
+void deref_node(struct expr_t* node)
+{
+    if (!--node->refcnt)
+        free(node);
 }
 
 void print_expr_internal(struct expr_t* expr) {
@@ -236,7 +260,7 @@ struct expr_t* parse_func(struct parser_ctx* ctx) {
     }
 
     if (!parser_match(ctx, ')')) {
-        destroy_expr(body);
+        deref_expr(body);
         err_str = "failed to match ')'";
         goto error;
     }
@@ -342,6 +366,8 @@ struct expr_t* substitute(struct expr_t* expr, char target, struct expr_t* x) {
     switch (expr->type) {
         case VAR:
             if (expr->value.var == target) {
+                deref_expr(expr);
+                ref_expr(x);
                 expr = x;
             }
             break;
@@ -364,14 +390,20 @@ struct expr_t* beta_reduce(struct expr_t* m, struct expr_t* n) {
     char target;
 
     if (m->type != FUNC) {
+        deref_expr(n);
         return m;
     }
-    return substitute(m->value.func.body, m->value.func.name, n);
+
+    struct expr_t *r = substitute(m->value.func.body, m->value.func.name, n);
+    deref_node(m);
+    deref_expr(n);
+    return r;
 }
 
 struct expr_t* apply(struct expr_t* expr) {
     struct expr_t* m = expr->value.app.m;
     struct expr_t* n = expr->value.app.n;
+    deref_node(expr);
 
     while (m->type == APP) {
         m = apply(m);
@@ -427,6 +459,6 @@ int main(int argc, char** argv) {
     expr = reduce_expr(expr);
     puts("\nsimplified expression");
     print_expr(expr);
-
+    deref_expr(expr);
     return 0;
 }
